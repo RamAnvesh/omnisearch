@@ -1,0 +1,41 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+	
+    <RelativeLayout 
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+		<EditText
+		    android:id="@+id/searchBox"
+		    android:layout_width="fill_parent"
+		    android:layout_height="@dimen/preferred_scaled_search_box_size"
+		    android:layout_toLeftOf="@+id/searchCount"
+		    android:hint="@string/search_box_hint"/>
+		<TextView 
+		    android:id="@+id/searchCount"
+		    android:layout_width="wrap_content"
+        	android:layout_height="@dimen/preferred_scaled_search_box_size"
+        	android:layout_alignParentRight = "true"
+		    />
+	</RelativeLayout>
+
+	<com.sudran.appman.views.ObservableScrollView
+	    android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:id="@+id/appListScrollView"
+		>
+	    <LinearLayout
+		    android:orientation="vertical"
+		    android:id="@+id/appList"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:scrollbarFadeDuration="2000"
+		    android:scrollbarSize="@dimen/scrollBarSize"
+		    android:scrollbars="horizontal|vertical"
+		    android:text="@string/hello_world"
+		    tools:context=".UniSearchHome"/>
+	</com.sudran.appman.views.ObservableScrollView>
+
+</LinearLayout>
