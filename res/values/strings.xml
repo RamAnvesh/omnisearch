@@ -3,7 +3,7 @@
     <string name="app_name">OmniSearch (Alpha)</string>
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">Settings</string>
-    <string name="title_activity_app_man_home">OmniSearch</string>
+    <string name="title_activity_app_man_home">OmniSearch (Alpha)</string>
     <string name="app_man_service_name">OmniSearchService</string>
     <string name="search_box_hint">Search</string>
     
