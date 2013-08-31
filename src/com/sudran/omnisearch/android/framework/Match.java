@@ -1,4 +1,4 @@
-package com.sudran.appman;
+package com.sudran.omnisearch.android.framework;
 
 
 public class Match {

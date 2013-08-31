@@ -1,4 +1,6 @@
-package com.sudran.appman;
+package com.sudran.omnisearch.android.app;
+
+import com.sudran.omnisearch.android.framework.ISearchKey;
 
 public enum AppSearchKeys implements ISearchKey{
 	APP_LABEL("app_label"), 

@@ -1,33 +1,35 @@
-package com.sudran.appman;
+package com.sudran.omnisearch.android.framework;
 
 import java.util.List;
 import java.util.regex.Pattern;
 
 import android.os.Process;
-import android.widget.LinearLayout;
 
-public class SearchThread extends Thread{
+
+public class SearchThread<SP extends BaseSearchProvider<? extends ISearchableElement>> extends Thread{
 	private long timeStamp;
 	private String searchString;
 	private boolean restartSearch;
 	private Pattern searchRegex;
-	private UniSearchHome uniSearchHomeActivity;
+	private OmniSearchHome uniSearchHomeActivity;
 	private Object objectLock = new Object();
+	private SP searchProvider;
 	
-	public SearchThread(UniSearchHome uniSearchHomeActivity) {
+	public SearchThread(OmniSearchHome uniSearchHomeActivity, SP searchProvider) {
 		this.uniSearchHomeActivity = uniSearchHomeActivity;
+		this.searchProvider = searchProvider;
 		setPriority(Process.THREAD_PRIORITY_BACKGROUND);
 	}
 	
-	public synchronized Pattern getSearchRegex() {
+	private Pattern getSearchRegex() {
 		return searchRegex;
 	}
 	
-	public synchronized void setSearchRegex(Pattern searchRegex) {
+	private void setSearchRegex(Pattern searchRegex) {
 		this.searchRegex = searchRegex;
 	}
 	
-	synchronized String getSearchString() {
+	private synchronized String getSearchString() {
 		return searchString;
 	}
 
@@ -64,7 +66,8 @@ public class SearchThread extends Thread{
 			if(isRestartSearch()){
 				continue mainLoop;
 			}
-			String searchString = UniSearchHome.WHITE_SPACE_PATTERN.matcher(rawSearchString).replaceAll("");
+			String searchString = OmniSearchHome.WHITE_SPACE_PATTERN.
+					matcher(rawSearchString).replaceAll("");
 			StringBuilder searchRegexBuilder = new StringBuilder();
 			for (int i = 0; i < searchString.length(); i++) {
 				char charAt = searchString.charAt(i);
@@ -77,16 +80,16 @@ public class SearchThread extends Thread{
 			Pattern regex = Pattern.compile(searchRegexBuilder.toString(), Pattern.CASE_INSENSITIVE);
 			setSearchRegex(regex);
 			int index =0;
-			final LinearLayout appListView = (LinearLayout) uniSearchHomeActivity.findViewById(R.id.appList);
-			List<? extends ISearchableElement> appList = uniSearchHomeActivity.getAppList();
+			List<? extends ISearchableElement> appList = searchProvider.getSearchableElements();
 			if(appList == null)
 				return;
 			while(index < appList.size()){
-				final ISearchableElement app = appList.get(index);
+				final ISearchableElement searchableElement = appList.get(index);
 				if(isRestartSearch()){
 					continue mainLoop;
 				}
-				uniSearchHomeActivity.addOrRemoveAppView(app, appListView, null);
+				Match match = searchableElement.performSearch(getSearchRegex());
+				uniSearchHomeActivity.addOrRemoveAppView(searchableElement, match);
 				index++;
 			}
 		long end = System.nanoTime();
@@ -102,8 +105,12 @@ public class SearchThread extends Thread{
 			}
 		}
 	}
-
+	
 	public Object getObjectLock() {
 		return objectLock;
+	}
+	
+	public SP getSearchProvider() {
+		return searchProvider;
 	}
 }

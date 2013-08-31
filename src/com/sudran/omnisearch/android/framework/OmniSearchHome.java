@@ -1,42 +1,30 @@
-package com.sudran.appman;
+package com.sudran.omnisearch.android.framework;
 
 import java.lang.Thread.State;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Process;
 import android.text.Editable;
-import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
-import android.text.style.ForegroundColorSpan;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.TextView.BufferType;
 
-import com.sudran.appman.views.ObservableScrollView;
-import com.sudran.appman.views.ObservableScrollView.OnScrollChangedListener;
+import com.sudran.appman.R;
+import com.sudran.omnisearch.android.app.ApplicationSearchProvider;
+import com.sudran.omnisearch.android.views.ObservableScrollView;
+import com.sudran.omnisearch.android.views.ObservableScrollView.OnScrollChangedListener;
 
-public class UniSearchHome extends Activity {
+public class OmniSearchHome extends Activity {
 
 	private static final String SEARCH_STRING_KEY = "app_state:search_box:search_string";
 	private static final String SEARCH_BOX_SELECTION_START_KEY = "app_state:search_box:selection_start";
@@ -44,9 +32,7 @@ public class UniSearchHome extends Activity {
 
 	static Pattern WHITE_SPACE_PATTERN = Pattern.compile("\\s+");
 
-	private List<SearchableApplication> appList = new LinkedList<SearchableApplication>();;
-
-	private int searchResultCount;
+	private int searchResultsCount;
 
 	private TextView searchCountText;
 
@@ -54,15 +40,18 @@ public class UniSearchHome extends Activity {
 	
 //	private StyleSpan styleSpan = new StyleSpan(Typeface.BOLD);
 	
-	private ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(Color.BLUE);
+	private List<SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>>> searchThreads;
+	private LinearLayout searchResultsView;
 
 	//private ReentrantLock appLoaderLock;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_app_man_home);
+		setContentView(R.layout.activity_omnisearch_home);
 		restoreFromSavedState(savedInstanceState);
+		initContent();
+		searchResultsView = (LinearLayout) findViewById(R.id.appList);
 		searchCountText = (TextView) findViewById(R.id.searchCount);
 		displayAppList_fork();
 		addListeners_fork();
@@ -73,11 +62,22 @@ public class UniSearchHome extends Activity {
 			public boolean onScrollChanged(ObservableScrollView observableScrollView,
 					int l, int t, int oldl, int oldt) {
 				EditText textView = getSearchBox();
-				InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+				InputMethodManager imm = 
+						(InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
 				imm.hideSoftInputFromWindow(textView.getWindowToken(), 0);
 				return true;
 			}
 		});
+	}
+
+	private void initContent() {
+		searchThreads = new LinkedList<SearchThread<? extends BaseSearchProvider
+				<? extends ISearchableElement>>>();
+		
+		SearchThread<ApplicationSearchProvider> appSearchThread = 
+				new SearchThread<ApplicationSearchProvider>(this, 
+						new ApplicationSearchProvider(getPackageManager(),this));
+		searchThreads.add(appSearchThread);
 	}
 
 	private void displayAppList_fork() {
@@ -95,50 +95,10 @@ public class UniSearchHome extends Activity {
 	}
 
 	private void displayAppList() {
-		long currentTimeMillis = System.currentTimeMillis();
-		final PackageManager packageManager = getPackageManager();
-		List<ApplicationInfo> applications = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
-		final LinearLayout appListLayout = (LinearLayout) findViewById(R.id.appList);
-		int index = 0;
-		for (final ApplicationInfo appInfo : applications) {
-			final SearchableApplication app = new SearchableApplication(packageManager, appInfo);
-			appList.add(app);
-			final CharSequence applicationLabel = app.getApplicationLabel() + "\n";
-			final LayoutParams appDetailsLayoutParams = 
-					new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-			final LayoutParams appNameLayoutParams = 
-					new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-			final LinearLayout appDetailsLinearLayout = new LinearLayout(this);
-			final TextView textView = new TextView(this);
-			app.setViewDetails(new ViewDetails(appDetailsLinearLayout,textView, index++));
-			textView.setText(applicationLabel);
-			textView.setGravity(Gravity.CENTER_VERTICAL);
-			textView.setOnClickListener(new OnClickListener() {
-
-				@Override
-				public void onClick(View v) {
-					app.openElement(packageManager, UniSearchHome.this);
-				}
-			});
-			final ImageView appIcon = new ImageView(this);
-			try {
-				Drawable drawable = packageManager.getApplicationIcon(app.getAndroidPackageName().toString());
-				appIcon.setImageDrawable(drawable);
-			} catch (NameNotFoundException e) {
-				e.printStackTrace();
-			}
-			int side = (int) getResources().getDimension(R.dimen.preferred_app_detail_height);
-			final LayoutParams appIconLayoutParams = new LayoutParams(side, side);
-			addOrRemoveAppView(app, appListLayout, appDetailsLayoutParams);
-			runOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					appDetailsLinearLayout.addView(appIcon, appIconLayoutParams);
-					appDetailsLinearLayout.addView(textView, appNameLayoutParams);
-				}
-			});
+		for (SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
+				: searchThreads) {
+			searchThread.getSearchProvider().load();
 		}
-		System.err.println("displayAppList: " + (System.currentTimeMillis() - currentTimeMillis));
 	}
 	
 	@Override
@@ -177,8 +137,10 @@ public class UniSearchHome extends Activity {
 	//    	final LinearLayout linearLayout = (LinearLayout) findViewById(R.id.appList);
 	//    	for (final ApplicationInfo packageInfo : packages) {
 	//    		final CharSequence applicationLabel = pm.getApplicationLabel(packageInfo) + "\n";
-	//    		final LayoutParams appDetailsLayoutParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-	//    		final LayoutParams appNameLayoutParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
+	//    		final LayoutParams appDetailsLayoutParams = 
+//					new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+	//    		final LayoutParams appNameLayoutParams = 
+//					new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
 	//    		final LinearLayout appDetailsLinearLayout = new LinearLayout(this);
 	//    		final TextView textView = new TextView(this);
 	//    		textView.setText(applicationLabel);
@@ -220,7 +182,8 @@ public class UniSearchHome extends Activity {
 
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before, int count) {
-				OnTextChangeEvent textChangeEvent = new OnTextChangeEvent(s,start,before,count, System.nanoTime());
+				OnTextChangeEvent textChangeEvent = 
+						new OnTextChangeEvent(s,start,before,count, System.nanoTime());
 				startSearching_fork(textChangeEvent);
 			}
 
@@ -242,42 +205,30 @@ public class UniSearchHome extends Activity {
 		getMenuInflater().inflate(R.menu.activity_app_man_home, menu);
 		return true;
 	}
-	private SearchThread searchThread = new SearchThread(this);
 
 	private void startSearching_fork(OnTextChangeEvent textChangeEvent) {
-		System.out.println("User input "+ textChangeEvent.getCharSequence()+ " time: " + System.nanoTime() + " nanos");
+		System.out.println("User input "+ textChangeEvent.getCharSequence()+ 
+				" time: " + System.nanoTime() + " nanos");
 		CharSequence searchString = textChangeEvent.getCharSequence();
-		searchThread.setSearchString(searchString.toString(), textChangeEvent.getTimeOfEventInNano());
-		State state = searchThread.getState();
-		if(state == Thread.State.NEW){
-			searchThread.start();
-		} else{
-			Thread thread = new Thread(){
-				public void run() {
-					Object objectLock = searchThread.getObjectLock();
-					synchronized (objectLock) {
-						objectLock.notifyAll();
-					}
+		for (final SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
+				: searchThreads) {
+			searchThread.setSearchString(searchString.toString(), textChangeEvent.getTimeOfEventInNano());
+			State state = searchThread.getState();
+			if(state == Thread.State.NEW){
+				searchThread.start();
+			} else{
+				Thread thread = new Thread(){
+					public void run() {
+						Object objectLock = searchThread.getObjectLock();
+						synchronized (objectLock) {
+							objectLock.notifyAll();
+						}
+					};
 				};
-			};
-			thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
-			thread.start();
+				thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
+				thread.start();
+			}
 		}
-	}
-
-	private Match checkForMatch(Pattern regex, ISearchableElement app) {
-		CharSequence applicationLabel = app.getPrimarySearchContent();
-		Matcher matcher = regex.matcher(applicationLabel);
-		boolean matches = false;
-		Spannable spannableApplabel = new SpannableString(applicationLabel);
-		while(matcher.find()){
-			matches = true;
-			int start = matcher.start();
-			int end = matcher.end();
-			//spannableApplabel.setSpan(styleSpan, start, end, 0);
-			spannableApplabel.setSpan(foregroundColorSpan, start, end, 0);
-		}
-		return new Match(matches, spannableApplabel);
 	}
 
 	private EditText getSearchBox(){
@@ -289,38 +240,31 @@ public class UniSearchHome extends Activity {
 	/*
 	 * Might be a long running function. Do not call on UI thread
 	 */
-	void addOrRemoveAppView(final ISearchableElement app, final ViewGroup appListLayout, final LayoutParams params) {
-		final View appView = app.getViewDetails().getSearchResultView();
-		Pattern searchRegex = searchThread.getSearchRegex();
-		final Match match = searchRegex != null? checkForMatch(searchRegex, app) : new Match(true, app.getPrimarySearchContent());
+	void addOrRemoveAppView(final ISearchableElement searchableElement, final Match match) {
+		final View appView = searchableElement.getViewDetails().getSearchResultView();
 		final boolean matches = match.isMatches();
+		ViewDetails viewDetails = searchableElement.getViewDetails();
+		final TextView primaryTextDisplay = viewDetails.getPrimaryTextDisplay();
 		runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
 				if(matches){
 					if(appView.getParent() == null){
-						if(params == null)
-							appListLayout.addView(appView);
-						else
-							appListLayout.addView(appView, params);
-						searchResultCount++;
+							searchResultsView.addView(appView);
+						searchResultsCount++;
 					}
 				} else {
-					if(appView.getParent() == appListLayout){
-						appListLayout.removeView(appView);
-						searchResultCount--;
+					if(appView.getParent() == searchResultsView){
+						searchResultsView.removeView(appView);
+						searchResultsCount--;
 					}
 				}
-				searchCountText.setText(String.valueOf(searchResultCount));
-				ViewDetails viewDetails = app.getViewDetails();
-				TextView primaryTextDisplay = viewDetails.getPrimaryTextDisplay();
+				searchCountText.setText(String.valueOf(searchResultsCount));
 				primaryTextDisplay.setText(match.getMatchedSpan(),BufferType.SPANNABLE);
 			}
 		});
 	}
-
-	List<SearchableApplication> getAppList() {
-		return appList;
-	}
+	
+	
 
 }

@@ -1,4 +1,4 @@
-package com.sudran.appman.utils;
+package com.sudran.omnisearch.android.utils;
 
 import java.lang.Thread.State;
 

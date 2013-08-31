@@ -11,10 +11,10 @@
         android:icon="@drawable/omnisearch_main"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <service android:name=".AppManService"
+        <service android:name="com.sudran.omnisearch.android.framework.OmniSearchService"
             android:exported="false"></service>
         <activity
-            android:name=".UniSearchHome"
+            android:name="com.sudran.omnisearch.android.framework.OmniSearchHome"
             android:label="@string/title_activity_app_man_home" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

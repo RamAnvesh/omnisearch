@@ -1,4 +1,4 @@
-package com.sudran.appman.views;
+package com.sudran.omnisearch.android.views;
 
 import java.util.Collection;
 import java.util.LinkedList;

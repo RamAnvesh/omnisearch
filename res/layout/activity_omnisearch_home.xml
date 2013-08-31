@@ -21,7 +21,7 @@
 		    />
 	</RelativeLayout>
 
-	<com.sudran.appman.views.ObservableScrollView
+	<com.sudran.omnisearch.android.views.ObservableScrollView
 	    android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
 		android:id="@+id/appListScrollView"
@@ -35,7 +35,7 @@
 		    android:scrollbarSize="@dimen/scrollBarSize"
 		    android:scrollbars="horizontal|vertical"
 		    android:text="@string/hello_world"
-		    tools:context=".UniSearchHome"/>
-	</com.sudran.appman.views.ObservableScrollView>
+		    tools:context=".OmniSearchHome"/>
+	</com.sudran.omnisearch.android.views.ObservableScrollView>
 
 </LinearLayout>
