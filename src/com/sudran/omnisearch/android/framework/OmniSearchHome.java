@@ -19,8 +19,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.TextView.BufferType;
 
-import com.sudran.appman.R;
+import com.sudran.omnisearch.R;
 import com.sudran.omnisearch.android.app.ApplicationSearchProvider;
+import com.sudran.omnisearch.android.contact.ContactSearchProvider;
 import com.sudran.omnisearch.android.views.ObservableScrollView;
 import com.sudran.omnisearch.android.views.ObservableScrollView.OnScrollChangedListener;
 
@@ -78,7 +79,12 @@ public class OmniSearchHome extends Activity {
 		SearchThread<ApplicationSearchProvider> appSearchThread = 
 				new SearchThread<ApplicationSearchProvider>(this, 
 						new ApplicationSearchProvider(getPackageManager(),this));
+		
+		SearchThread<BaseSearchProvider<? extends ISearchableElement>> contactsSearchThread = 
+				new SearchThread<BaseSearchProvider<? extends ISearchableElement>>(this, new ContactSearchProvider(this));
+		
 		searchThreads.add(appSearchThread);
+		searchThreads.add(contactsSearchThread);
 	}
 
 	private void displayAppList_fork() {
@@ -99,6 +105,7 @@ public class OmniSearchHome extends Activity {
 		for (SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
 				: searchThreads) {
 			searchThread.getSearchProvider().load();
+			
 		}
 	}
 	

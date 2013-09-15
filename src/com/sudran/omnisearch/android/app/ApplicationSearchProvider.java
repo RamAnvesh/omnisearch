@@ -3,7 +3,6 @@ package com.sudran.omnisearch.android.app;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.content.pm.ApplicationInfo;
@@ -19,12 +18,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.sudran.appman.R;
+import com.sudran.omnisearch.R;
 import com.sudran.omnisearch.android.framework.BaseSearchProvider;
-import com.sudran.omnisearch.android.framework.Match;
-import com.sudran.omnisearch.android.framework.SearchResultCallback;
 import com.sudran.omnisearch.android.framework.ViewDetails;
-import com.sudran.omnisearch.android.utils.MatchingUtils;
 
 public class ApplicationSearchProvider extends BaseSearchProvider<SearchableApplication> {
 	protected List<SearchableApplication> searchableElements = new ArrayList<SearchableApplication>();
@@ -50,8 +46,13 @@ public class ApplicationSearchProvider extends BaseSearchProvider<SearchableAppl
 				public void run() {
 					try {
 						//android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST);
-						Drawable drawable = packageManager.getApplicationIcon(app.getAndroidPackageName().toString());
-						app.getViewDetails().getIconImageVIew().setImageDrawable(drawable);
+						final Drawable drawable = packageManager.getApplicationIcon(app.getAndroidPackageName().toString());
+						searchActivity.runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+								app.getViewDetails().getIconImageVIew().setImageDrawable(drawable);
+							}
+						});
 					} catch (NameNotFoundException e) {
 						e.printStackTrace();
 					}
@@ -91,34 +92,13 @@ public class ApplicationSearchProvider extends BaseSearchProvider<SearchableAppl
 			}
 		});
 		int side = (int) searchActivity.getResources().
-				getDimension(R.dimen.preferred_app_detail_height);
+				getDimension(R.dimen.preferred_search_result_detail_height);
 		final ImageView appIcon = new ImageView(searchActivity);
 		final LayoutParams appIconLayoutParams = new LayoutParams(side, side);
 		appIcon.setLayoutParams(appIconLayoutParams);
 		appDetailsLinearLayout.addView(appIcon);
 		appDetailsLinearLayout.addView(textView);
 		app.setViewDetails(new ViewDetails(appDetailsLinearLayout,textView, appIcon, index));
-	}
-	
-	public void searchFor(Pattern regex, SearchResultCallback searchResultCallback){
-		List<SearchableApplication> searchableElements = getSearchableElements();
-		if(searchableElements == null)
-			return;
-		int index =0;
-		while(index < searchableElements.size()){
-			if(searchResultCallback.isCallbackExpired()){
-				return;
-			}
-			final SearchableApplication searchableElement = searchableElements.get(index);
-			Match match = performSearch(searchableElement, regex) ;
-			searchResultCallback.newSearchResult(searchableElement, match);
-			index++;
-		}
-	}
-
-	private Match performSearch(SearchableApplication searchableElement, Pattern regex) {
-		return regex != null? MatchingUtils.checkForMatch(regex,searchableElement.getApplicationLabel()) 
-				: new Match(false, searchableElement.getPrimarySearchContent(), null);
 	}
 	
 	public List<SearchableApplication> getSearchableElements() {

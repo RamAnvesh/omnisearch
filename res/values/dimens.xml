@@ -2,5 +2,5 @@
 <resources>
     <dimen name="scrollBarSize">20dp</dimen>
     <dimen name="preferred_scaled_search_box_size">40sp</dimen>
-    <dimen name="preferred_app_detail_height">40sp</dimen>
+    <dimen name="preferred_search_result_detail_height">40sp</dimen>
 </resources>
