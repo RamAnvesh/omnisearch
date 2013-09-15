@@ -5,4 +5,4 @@
  * @author rkasam
  *
  */
-package com.sudran.omnisearch.android.framework;
+package com.sudran.omnisearch.android.contact;

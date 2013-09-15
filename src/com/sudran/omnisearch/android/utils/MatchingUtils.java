@@ -24,6 +24,6 @@ public final class MatchingUtils {
 			//spannableApplabel.setSpan(styleSpan, start, end, 0);
 			spannableApplabel.setSpan(foregroundColorSpan, start, end, 0);
 		}
-		return new Match(matches, spannableApplabel);
+		return new Match(matches, spannableApplabel, regex);
 	}
 }
