@@ -1,16 +1,19 @@
 package com.sudran.omnisearch.android.framework;
 
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class ViewDetails {
 	private int index;
 	private View searchResult;
 	private TextView primaryTextDisplay;
+	private ImageView icon;
 	
-	public ViewDetails(View view, TextView primaryTextDisplay, int index) {
+	public ViewDetails(View view, TextView primaryTextDisplay, ImageView icon, int index) {
 		this.searchResult = view;
 		this.primaryTextDisplay = primaryTextDisplay;
+		this.icon = icon;
 		this.index = index;
 	}
 	
@@ -28,6 +31,10 @@ public class ViewDetails {
 	
 	public void setIndexInParent(int index) {
 		this.index = index;
+	}
+	
+	public ImageView getIconImageVIew() {
+		return icon;
 	}
 	
 }

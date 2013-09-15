@@ -1,15 +1,10 @@
 package com.sudran.omnisearch.android.framework;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.regex.Pattern;
 
 public abstract class BaseSearchProvider<T extends ISearchableElement> {
-	protected List<T> searchableElements = new LinkedList<T>();;
-	
 
 	protected abstract void load();
 	
-	public List<T> getSearchableElements() {
-		return searchableElements;
-	}
+	public abstract void searchFor(Pattern regex, SearchResultCallback searchResultCallback);
 }

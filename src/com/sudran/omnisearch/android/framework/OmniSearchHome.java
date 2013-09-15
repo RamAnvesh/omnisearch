@@ -42,6 +42,7 @@ public class OmniSearchHome extends Activity {
 	
 	private List<SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>>> searchThreads;
 	private LinearLayout searchResultsView;
+	private Pattern searchRegex;
 
 	//private ReentrantLock appLoaderLock;
 
@@ -207,12 +208,14 @@ public class OmniSearchHome extends Activity {
 	}
 
 	private void startSearching_fork(OnTextChangeEvent textChangeEvent) {
-		System.out.println("User input "+ textChangeEvent.getCharSequence()+ 
-				" time: " + System.nanoTime() + " nanos");
-		CharSequence searchString = textChangeEvent.getCharSequence();
+		removeAllSearchResults();
+		String rawSearchString = textChangeEvent.getCharSequence().toString();
+		long timeOfEventInNano = textChangeEvent.getTimeOfEventInNano();
+		Pattern regex = compileRegex(rawSearchString);
+		setSearchRegex(regex);
 		for (final SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
 				: searchThreads) {
-			searchThread.setSearchString(searchString.toString(), textChangeEvent.getTimeOfEventInNano());
+			searchThread.setSearchRegex(regex, timeOfEventInNano);
 			State state = searchThread.getState();
 			if(state == Thread.State.NEW){
 				searchThread.start();
@@ -229,6 +232,27 @@ public class OmniSearchHome extends Activity {
 				thread.start();
 			}
 		}
+	}
+
+	private Pattern compileRegex(String rawSearchString) {
+		String searchString = OmniSearchHome.WHITE_SPACE_PATTERN.
+				matcher(rawSearchString).replaceAll("");
+		StringBuilder searchRegexBuilder = new StringBuilder();
+		for (int i = 0; i < searchString.length(); i++) {
+			char charAt = searchString.charAt(i);
+			searchRegexBuilder.append("\\Q");
+			searchRegexBuilder.append(charAt);
+			searchRegexBuilder.append("\\E");
+			searchRegexBuilder.append("\\s*");
+		}
+		Pattern regex = Pattern.compile(searchRegexBuilder.toString(), Pattern.CASE_INSENSITIVE);
+		return regex;
+	}
+
+	private void removeAllSearchResults() {
+		searchResultsView.removeAllViews();
+		searchResultsCount = 0;
+		searchCountText.setText("");
 	}
 
 	private EditText getSearchBox(){
@@ -248,23 +272,34 @@ public class OmniSearchHome extends Activity {
 		runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
-				if(matches){
-					if(appView.getParent() == null){
+				if(matches && match.getMatchingRegex().pattern().equals(getSearchRegex().pattern())){
+					if(matches){
+						if(appView.getParent() == null){
 							searchResultsView.addView(appView);
-						searchResultsCount++;
+							searchResultsCount++;
+						}
+					} else {
+						if(appView.getParent() == searchResultsView){
+							searchResultsView.removeView(appView);
+							searchResultsCount--;
+						}
 					}
-				} else {
-					if(appView.getParent() == searchResultsView){
-						searchResultsView.removeView(appView);
-						searchResultsCount--;
-					}
+					if(searchResultsCount > 0)
+						searchCountText.setText(String.valueOf(searchResultsCount));
+					else
+						searchCountText.setText("");
+					primaryTextDisplay.setText(match.getMatchedSpan(),BufferType.SPANNABLE);
 				}
-				searchCountText.setText(String.valueOf(searchResultsCount));
-				primaryTextDisplay.setText(match.getMatchedSpan(),BufferType.SPANNABLE);
 			}
 		});
 	}
 	
-	
+	synchronized Pattern getSearchRegex() {
+		return searchRegex;
+	}
+
+	synchronized void setSearchRegex(Pattern searchRegex) {
+		this.searchRegex = searchRegex;
+	}
 
 }
