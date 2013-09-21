@@ -10,6 +10,7 @@ public abstract class BaseSearchProvider<T extends ISearchableElement> {
 	protected abstract void load();
 	
 	public void searchFor(Pattern regex, SearchResultCallback searchResultCallback){
+		long start = System.currentTimeMillis();
 		List<? extends ISearchableElement> searchableElements = getSearchableElements();
 		if(searchableElements == null)
 			return;
@@ -23,6 +24,8 @@ public abstract class BaseSearchProvider<T extends ISearchableElement> {
 			searchResultCallback.newSearchResult(searchableElement, match);
 			index++;
 		}
+		long end = System.currentTimeMillis();
+		System.out.println("Time to search all search elements for "+ regex.pattern()+ ": " + (end - start));
 	}
 	
 	protected abstract List<? extends ISearchableElement> getSearchableElements();

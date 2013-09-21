@@ -62,30 +62,31 @@ public class SearchThread<SP extends BaseSearchProvider<? extends ISearchableEle
 				} else {
 					isEmptySearchString = false;
 				}
-				final SearchResultCallback searchResultCallback = new SearchResultCallback(){
-					@Override
-					public void newSearchResult(ISearchableElement searchableElement, Match match) {
-
-						if(!isRestartSearch()){
-							uniSearchHomeActivity.addOrRemoveAppView(searchableElement, match);
+				if(!isEmptySearchString){
+					final SearchResultCallback searchResultCallback = new SearchResultCallback(){
+						@Override
+						public void newSearchResult(ISearchableElement searchableElement, Match match) {
+							
+							if(!isRestartSearch()){
+								uniSearchHomeActivity.addOrRemoveAppView(searchableElement, match);
+							}
 						}
-					}
-
-					@Override
-					public boolean isCallbackExpired() {
-						return isRestartSearch();
-					}
-				};
-				Thread thread = new Thread(){
-					@Override
-					public void run() {
-						if(!isRestartSearch())
-							searchProvider.searchFor(searchRegex, searchResultCallback);
-					}
-				};
-				thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
-				if(!isEmptySearchString)
+						
+						@Override
+						public boolean isCallbackExpired() {
+							return isRestartSearch();
+						}
+					};
+					Thread thread = new Thread(){
+						@Override
+						public void run() {
+							if(!isRestartSearch())
+								searchProvider.searchFor(searchRegex, searchResultCallback);
+						}
+					};
+					thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
 					thread.start();
+				}
 				synchronized (objectLock) {
 					try {
 						while(!restartSearch){

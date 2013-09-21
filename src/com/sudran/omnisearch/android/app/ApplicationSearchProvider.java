@@ -34,7 +34,8 @@ public class ApplicationSearchProvider extends BaseSearchProvider<SearchableAppl
 	
 	@Override
 	public void load() {
-		long currentTimeMillis = System.currentTimeMillis();
+		long startTime = System.currentTimeMillis();
+		System.out.println("Application loading started at: " + startTime);
 		List<ApplicationInfo> applications = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
 		int index = 0;
 		final List<Runnable> longRunningOperations = new LinkedList<Runnable>();
@@ -50,7 +51,7 @@ public class ApplicationSearchProvider extends BaseSearchProvider<SearchableAppl
 						searchActivity.runOnUiThread(new Runnable() {
 							@Override
 							public void run() {
-								app.getViewDetails().getIconImageVIew().setImageDrawable(drawable);
+								app.getViewDetails().getIconImageView().setImageDrawable(drawable);
 							}
 						});
 					} catch (NameNotFoundException e) {
@@ -70,7 +71,7 @@ public class ApplicationSearchProvider extends BaseSearchProvider<SearchableAppl
 		};
 		loadIconsThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
 		loadIconsThread.start();
-		System.err.println("Loading app list: " + (System.currentTimeMillis() - currentTimeMillis));
+		System.out.println("Time taken to laod apps: " + (System.currentTimeMillis() - startTime));
 	}
 
 	private void makeUiElement(int index, final SearchableApplication app) {

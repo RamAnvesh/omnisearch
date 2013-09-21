@@ -33,7 +33,7 @@ public class ViewDetails {
 		this.index = index;
 	}
 	
-	public ImageView getIconImageVIew() {
+	public ImageView getIconImageView() {
 		return icon;
 	}
 	

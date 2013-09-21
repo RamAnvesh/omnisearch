@@ -1,6 +1,5 @@
 package com.sudran.omnisearch.android.framework;
 
-import java.lang.Thread.State;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -88,24 +87,23 @@ public class OmniSearchHome extends Activity {
 	}
 
 	private void displayAppList_fork() {
-		Thread displayAppList = new Thread(){
-			public void run() {
-				//    			try {
-				//					sleep(1000);
-				//				} catch (InterruptedException e) {
-				//
-				//				}
-				displayAppList();
-			};
-		};
-		displayAppList.start();
+		loadData_fork();
 	}
 
-	private void displayAppList() {
-		for (SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
+	private void loadData_fork() {
+		for (final SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
 				: searchThreads) {
-			searchThread.getSearchProvider().load();
-			
+			Thread displayAppList = new Thread(){
+				public void run() {
+					//    			try {
+					//					sleep(1000);
+					//				} catch (InterruptedException e) {
+					//
+					//				}
+					searchThread.getSearchProvider().load();
+				};
+			};
+			displayAppList.start();
 		}
 	}
 	
@@ -214,31 +212,45 @@ public class OmniSearchHome extends Activity {
 		return true;
 	}
 
-	private void startSearching_fork(OnTextChangeEvent textChangeEvent) {
-		removeAllSearchResults();
-		String rawSearchString = textChangeEvent.getCharSequence().toString();
-		long timeOfEventInNano = textChangeEvent.getTimeOfEventInNano();
-		Pattern regex = compileRegex(rawSearchString);
-		setSearchRegex(regex);
-		for (final SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
-				: searchThreads) {
-			searchThread.setSearchRegex(regex, timeOfEventInNano);
-			State state = searchThread.getState();
-			if(state == Thread.State.NEW){
-				searchThread.start();
-			} else{
-				Thread thread = new Thread(){
+	private void startSearching_fork(final OnTextChangeEvent textChangeEvent) {
+		long startTime = System.currentTimeMillis();
+		Thread searchTriggerThread = new Thread(){
+			public void run() {
+				runOnUiThread(new Runnable() {
+					@Override
 					public void run() {
-						Object objectLock = searchThread.getObjectLock();
-						synchronized (objectLock) {
-							objectLock.notifyAll();
-						}
-					};
-				};
-				thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
-				thread.start();
+						removeAllSearchResults();
+					}
+				});
+				String rawSearchString = textChangeEvent.getCharSequence().toString();
+				long timeOfEventInNano = textChangeEvent.getTimeOfEventInNano();
+				Pattern regex = compileRegex(rawSearchString);
+				setSearchRegex(regex);
+				for (final SearchThread<? extends BaseSearchProvider<? extends ISearchableElement>> searchThread 
+						: searchThreads) {
+					searchThread.setSearchRegex(regex, timeOfEventInNano);
+					State state = searchThread.getState();
+					if(state == Thread.State.NEW){
+						searchThread.start();
+					} else{
+						Thread thread = new Thread(){
+							public void run() {
+								Object objectLock = searchThread.getObjectLock();
+								synchronized (objectLock) {
+									objectLock.notifyAll();
+								}
+							};
+						};
+						thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
+						thread.start();
+					}
+				}
 			}
-		}
+		};
+		searchTriggerThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
+		searchTriggerThread.start();
+		long endTime = System.currentTimeMillis();
+		System.out.println("Time to trigger search on keyEvent: " + (endTime - startTime));
 	}
 
 	private Pattern compileRegex(String rawSearchString) {
@@ -257,9 +269,12 @@ public class OmniSearchHome extends Activity {
 	}
 
 	private void removeAllSearchResults() {
+		long startTime = System.currentTimeMillis();
 		searchResultsView.removeAllViews();
 		searchResultsCount = 0;
 		searchCountText.setText("");
+		long endTime = System.currentTimeMillis();
+		System.out.println("Time taken to remove to clearSearchView: " + (endTime - startTime));
 	}
 
 	private EditText getSearchBox(){
@@ -279,6 +294,7 @@ public class OmniSearchHome extends Activity {
 		runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
+				long startTime = System.currentTimeMillis();
 				if(matches && match.getMatchingRegex().pattern().equals(getSearchRegex().pattern())){
 					if(matches){
 						if(appView.getParent() == null){
@@ -297,6 +313,8 @@ public class OmniSearchHome extends Activity {
 						searchCountText.setText("");
 					primaryTextDisplay.setText(match.getMatchedSpan(),BufferType.SPANNABLE);
 				}
+				long endTime = System.currentTimeMillis();
+				System.out.println("Time taken to " + (matches? "add" : "remove")+ " one searchResult: " + (endTime - startTime));
 			}
 		});
 	}
